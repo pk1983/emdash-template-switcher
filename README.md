@@ -26,7 +26,7 @@ ones.
 - [Installation](#installation)
 - [Usage](#usage)
   - [`init`](#npx-emdash-template-switcher-init)
-  - [`add <name>`](#npx-emdash-template-switcher-add-name)
+  - [`add <name|url|id@version>`](#npx-emdash-template-switcher-add-nameurlidversion)
   - [`upgrade`](#npx-emdash-template-switcher-upgrade)
 - [How switching works](#how-switching-works)
 - [The template contract](#the-template-contract)
@@ -111,20 +111,25 @@ Scaffolds the switcher into your site:
 
 Flags: `--force` (overwrite existing files, backing them up as `*.orig`).
 
-### `npx emdash-template-switcher add <name|url>`
+### `npx emdash-template-switcher add <name|url|id@version>`
 
 Adds a new template, starting from a copy of `minimal` or by installing a package archive:
 
 ```bash
 npx emdash-template-switcher add magazine
 npx emdash-template-switcher add https://noblox.app/packages/shopvibe.tar.gz
+npx emdash-template-switcher add shopvibe@latest
+npx emdash-template-switcher add shopvibe@0.1.0
 ```
 
 For a template name, it scaffolds `src/template/<name>/`, sets its `meta`,
 **registers it** in `src/template/index.ts`, and adds it to the admin dropdown.
 For a package URL or `.tar.gz` path, it installs the files listed in the
 package manifest, then registers the package `id` and adds it to the admin
-dropdown. Then:
+dropdown. For `id@version`, it resolves the template from the marketplace
+catalog first, then installs the package archive it points to.
+
+Then:
 
 ```bash
 npm run build   # one rebuild so the new template's code is bundled

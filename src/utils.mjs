@@ -115,6 +115,7 @@ export function isTemplatePackageSpec(spec) {
 	if (/^https?:\/\//i.test(spec)) return true;
 	if (spec.endsWith(".tar.gz") || spec.endsWith(".tgz")) return true;
 	if (spec.includes("/") || spec.includes("\\")) return true;
+	if (spec.includes("@")) return true;
 	return false;
 }
 
@@ -154,6 +155,11 @@ export async function installTemplatePackage({ cwd, spec, force }) {
 }
 
 async function resolveArchiveSpec(spec) {
+	const marketplaceRef = parseMarketplaceRef(spec);
+	if (marketplaceRef) {
+		const resolved = await resolveMarketplaceRef(marketplaceRef);
+		return resolveArchiveSpec(resolved);
+	}
 	if (/^https?:\/\//i.test(spec)) {
 		const response = await fetch(spec);
 		if (!response.ok) {
@@ -169,6 +175,69 @@ async function resolveArchiveSpec(spec) {
 		throw new Error(`Package archive not found: ${spec}`);
 	}
 	return { archivePath: resolved, cleanupDir: null };
+}
+
+function parseMarketplaceRef(spec) {
+	if (/^https?:\/\//i.test(spec)) return null;
+	if (spec.endsWith(".tar.gz") || spec.endsWith(".tgz")) return null;
+	if (spec.includes("/") || spec.includes("\\")) return null;
+	const at = spec.lastIndexOf("@");
+	if (at <= 0) return null;
+	const id = spec.slice(0, at).trim();
+	const version = spec.slice(at + 1).trim();
+	if (!id || !version) return null;
+	return { id, version };
+}
+
+async function resolveMarketplaceRef({ id, version }) {
+	const catalogUrl =
+		process.env.EMDASH_TEMPLATE_MARKETPLACE_CATALOG ||
+		"https://raw.githubusercontent.com/pk1983/emdash-template-marketplace/main/catalog/index.json";
+	const response = await fetch(catalogUrl);
+	if (!response.ok) {
+		throw new Error(`Failed to load marketplace catalog: ${response.status} ${response.statusText}`);
+	}
+	const catalog = await response.json();
+	const entries = Array.isArray(catalog?.templates) ? catalog.templates : [];
+	const matches = entries.filter((item) => item?.id === id);
+	if (matches.length === 0) {
+		const available = entries.map((item) => item?.id).filter(Boolean).join(", ");
+		throw new Error(
+			`No marketplace template found for "${id}".${available ? ` Available: ${available}.` : ""}`,
+		);
+	}
+
+	let chosen;
+	if (version === "latest") {
+		chosen = matches
+			.filter((item) => item?.status === "available" && item?.install?.url)
+			.sort((a, b) => compareVersions(b.version, a.version))[0] ?? matches[0];
+	} else {
+		chosen = matches.find((item) => item?.version === version) ?? null;
+	}
+
+	if (!chosen?.install?.url) {
+		throw new Error(`Marketplace template "${id}@${version}" does not have a downloadable package URL.`);
+	}
+
+	return chosen.install.url;
+}
+
+function compareVersions(a, b) {
+	const pa = parseVersion(a);
+	const pb = parseVersion(b);
+	if (!pa || !pb) return String(a).localeCompare(String(b), undefined, { numeric: true });
+	for (let i = 0; i < 3; i += 1) {
+		if (pa[i] !== pb[i]) return pa[i] - pb[i];
+	}
+	return 0;
+}
+
+function parseVersion(value) {
+	if (typeof value !== "string") return null;
+	const match = value.trim().match(/^(\d+)\.(\d+)\.(\d+)/);
+	if (!match) return null;
+	return match.slice(1).map((n) => Number(n));
 }
 
 function findFile(rootDir, fileName) {
