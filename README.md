@@ -110,16 +110,20 @@ Scaffolds the switcher into your site:
 
 Flags: `--force` (overwrite existing files, backing them up as `*.orig`).
 
-### `npx emdash-template-switcher add <name>`
+### `npx emdash-template-switcher add <name|url>`
 
-Adds a new template, starting from a copy of `minimal`:
+Adds a new template, starting from a copy of `minimal` or by installing a package archive:
 
 ```bash
 npx emdash-template-switcher add magazine
+npx emdash-template-switcher add https://noblox.app/packages/shopvibe.tar.gz
 ```
 
-It scaffolds `src/template/magazine/`, sets its `meta`, **registers it** in
-`src/template/index.ts`, and adds it to the admin dropdown. Then:
+For a template name, it scaffolds `src/template/<name>/`, sets its `meta`,
+**registers it** in `src/template/index.ts`, and adds it to the admin dropdown.
+For a package URL or `.tar.gz` path, it installs the files listed in the
+package manifest, then registers the package `id` and adds it to the admin
+dropdown. Then:
 
 ```bash
 npm run build   # one rebuild so the new template's code is bundled

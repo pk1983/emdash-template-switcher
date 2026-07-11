@@ -1,5 +1,17 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, copyFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import {
+	existsSync,
+	readFileSync,
+	writeFileSync,
+	mkdirSync,
+	readdirSync,
+	statSync,
+	copyFileSync,
+	rmSync,
+} from "node:fs";
+import { dirname, join, relative, isAbsolute } from "node:path";
+import { tmpdir } from "node:os";
+import { mkdtempSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -99,6 +111,79 @@ export function ensureScript(cwd, name, command) {
 	return true;
 }
 
+export function isTemplatePackageSpec(spec) {
+	if (/^https?:\/\//i.test(spec)) return true;
+	if (spec.endsWith(".tar.gz") || spec.endsWith(".tgz")) return true;
+	if (spec.includes("/") || spec.includes("\\")) return true;
+	return false;
+}
+
+export async function installTemplatePackage({ cwd, spec, force }) {
+	const { archivePath, cleanupDir } = await resolveArchiveSpec(spec);
+	const tempDir = mkdtempSync(join(tmpdir(), "emdash-template-"));
+	try {
+		execFileSync("tar", ["-xzf", archivePath, "-C", tempDir]);
+		const manifestPath = findFile(tempDir, "template.manifest.json");
+		if (!manifestPath) {
+			throw new Error("Package archive did not include template.manifest.json.");
+		}
+		const manifest = readJson(manifestPath);
+		if (!manifest?.id || typeof manifest.id !== "string") {
+			throw new Error("Package manifest is missing a string `id`.");
+		}
+		if (!Array.isArray(manifest.files) || manifest.files.length === 0) {
+			throw new Error(`Package ${manifest.id} does not list any files.`);
+		}
+
+		const packageRoot = dirname(manifestPath);
+		for (const file of manifest.files) {
+			if (typeof file !== "string") {
+				throw new Error(`Package ${manifest.id} contains an invalid file entry.`);
+			}
+			const from = join(packageRoot, file);
+			if (!existsSync(from)) {
+				throw new Error(`Package ${manifest.id} is missing ${file}.`);
+			}
+			copyFile(from, join(cwd, file), { force, cwd });
+		}
+		return manifest;
+	} finally {
+		rmSync(tempDir, { recursive: true, force: true });
+		if (cleanupDir) rmSync(cleanupDir, { recursive: true, force: true });
+	}
+}
+
+async function resolveArchiveSpec(spec) {
+	if (/^https?:\/\//i.test(spec)) {
+		const response = await fetch(spec);
+		if (!response.ok) {
+			throw new Error(`Failed to download package: ${response.status} ${response.statusText}`);
+		}
+		const tempArchive = mkdtempSync(join(tmpdir(), "emdash-template-archive-"));
+		const archivePath = join(tempArchive, "package.tar.gz");
+		writeFileSync(archivePath, Buffer.from(await response.arrayBuffer()));
+		return { archivePath, cleanupDir: tempArchive };
+	}
+	const resolved = isAbsolute(spec) ? spec : join(process.cwd(), spec);
+	if (!existsSync(resolved)) {
+		throw new Error(`Package archive not found: ${spec}`);
+	}
+	return { archivePath: resolved, cleanupDir: null };
+}
+
+function findFile(rootDir, fileName) {
+	for (const entry of readdirSync(rootDir, { withFileTypes: true })) {
+		const full = join(rootDir, entry.name);
+		if (entry.isDirectory()) {
+			const found = findFile(full, fileName);
+			if (found) return found;
+		} else if (entry.isFile() && entry.name === fileName) {
+			return full;
+		}
+	}
+	return null;
+}
+
 const APPEARANCE_COLLECTION = {
 	slug: "appearance",
 	label: "Appearance",
@@ -164,7 +249,7 @@ export function addSeedTemplateOption(seedPath, name) {
 
 /** Register a template in src/template/index.ts via the marker comments. */
 export function registerTemplateInRegistry(indexPath, name) {
-	let src = readFileSync(indexPath, "utf8");
+  let src = readFileSync(indexPath, "utf8");
 	const importLine = `import * as ${camel(name)} from "./${name}";`;
 	const mapLine = `\t"${name}": ${camel(name)},`;
 	if (src.includes(importLine)) return false;

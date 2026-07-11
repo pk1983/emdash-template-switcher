@@ -10,8 +10,9 @@ Usage:
                                                "minimal" template, convert pages to
                                                routers, and wire the admin control.
 
-  npx emdash-template-switcher add <name>      Add a new template (starts from a copy
-                                               of "minimal") and register it.
+  npx emdash-template-switcher add <name|url>   Add a new template (starts from a copy
+                                               of "minimal" or installs a package URL)
+                                               and register it.
 
 Options:
   --force       Overwrite existing files instead of skipping/backing up.
@@ -35,7 +36,7 @@ async function main() {
 	} else if (cmd === "add") {
 		const name = argv.slice(1).find((a) => !a.startsWith("-"));
 		if (!name) {
-			console.error("✗ Usage: emdash-template-switcher add <name>");
+			console.error("✗ Usage: emdash-template-switcher add <name|url>");
 			process.exit(1);
 		}
 		await runAdd({ cwd, name, force });
