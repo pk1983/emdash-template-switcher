@@ -70,6 +70,13 @@ npm install -D emdash-template-switcher
 npx emdash-template-switcher init
 ```
 
+If you want to use it before publishing to npm, install straight from git:
+
+```bash
+npm install -D git+https://github.com/pk1983/emdash-template-switcher.git
+npx emdash-template-switcher init
+```
+
 Then apply the schema and start:
 
 ```bash
