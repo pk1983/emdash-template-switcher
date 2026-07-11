@@ -324,7 +324,7 @@ export function syncEmdashTemplateCaches(cwd, seedPath) {
 	const templateNames = getAppearanceTemplateOptions(seedPath);
 	const schemaPath = join(cwd, ".emdash", "schema.json");
 	const typesPath = join(cwd, ".emdash", "types.ts");
-	const dbPath = join(cwd, "data.db");
+	const dbPath = findDatabasePath(cwd);
 
 	const result = {
 		schemaPresent: false,
@@ -342,11 +342,27 @@ export function syncEmdashTemplateCaches(cwd, seedPath) {
 		result.typesPresent = true;
 		result.typesChanged = patchEmdashTypesCache(typesPath, templateNames);
 	}
-	if (existsSync(dbPath)) {
+	if (dbPath && existsSync(dbPath)) {
 		result.databasePresent = true;
 		result.databaseChanged = patchEmdashDatabase(dbPath, templateNames);
 	}
 	return result;
+}
+
+function findDatabasePath(cwd) {
+	const configPath = ["astro.config.mjs", "astro.config.ts", "astro.config.js"]
+		.map((name) => join(cwd, name))
+		.find((path) => existsSync(path));
+	if (configPath) {
+		const src = readFileSync(configPath, "utf8");
+		const match = src.match(/sqlite\s*\(\s*\{\s*url:\s*["']file:([^"']+)["']/s);
+		if (match?.[1]) {
+			const urlPath = match[1].trim();
+			return isAbsolute(urlPath) ? urlPath : join(cwd, urlPath);
+		}
+	}
+	const fallback = join(cwd, "data.db");
+	return existsSync(fallback) ? fallback : null;
 }
 
 function getAppearanceTemplateOptions(seedPath) {
