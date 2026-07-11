@@ -2,17 +2,38 @@
 	"name": "emdash-template-switcher",
 	"version": "0.1.0",
 	"description": "Live, admin-switchable site templates for EmDash CMS. A shadcn-style CLI that scaffolds a template registry + a minimal template into your EmDash/Astro site.",
-	"keywords": ["emdash", "astro", "cms", "template", "theme", "switcher", "cli"],
+	"keywords": [
+		"emdash",
+		"emdash-cms",
+		"astro",
+		"cms",
+		"template",
+		"theme",
+		"theme-switcher",
+		"template-switcher",
+		"cli",
+		"scaffold"
+	],
 	"license": "MIT",
+	"author": "Huankai Chen <huankaichen@hotmail.com>",
+	"homepage": "https://github.com/pk1983/emdash-template-switcher#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/pk1983/emdash-template-switcher.git"
+	},
+	"bugs": {
+		"url": "https://github.com/pk1983/emdash-template-switcher/issues"
+	},
 	"type": "module",
 	"bin": {
 		"emdash-template-switcher": "bin/cli.mjs"
 	},
-	"files": ["bin", "src", "stubs", "README.md"],
+	"files": ["bin", "src", "stubs", "README.md", "LICENSE", "CHANGELOG.md"],
 	"engines": {
 		"node": ">=18"
 	},
 	"scripts": {
-		"format": "echo \"(add prettier if desired)\""
+		"check": "node --check bin/cli.mjs && node --check src/init.mjs && node --check src/add.mjs && node --check src/utils.mjs",
+		"smoke": "node bin/cli.mjs --help"
 	}
 }

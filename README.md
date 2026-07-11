@@ -1,66 +1,118 @@
+<div align="center">
+
 # emdash-template-switcher
 
-Live, admin-switchable **site templates** for [EmDash](https://emdashcms.com)
-CMS. A shadcn-style CLI: it scaffolds a small **template registry** and a
-**minimal** template into your EmDash/Astro site, converts your pages into thin
-routers, and wires an admin control so you can switch the whole site's
-layout + components — live for installed templates, one rebuild for new ones.
+**Live, admin-switchable site templates for [EmDash CMS](https://emdashcms.com).**
 
-> It stays **upgrade-compatible** with EmDash: everything is scaffolded into your
-> own `src/`, consuming EmDash only through its public APIs. Nothing patches or
-> forks EmDash core.
+A shadcn-style CLI that scaffolds a template registry and a minimal template into
+your EmDash + Astro site, so an admin can switch the whole site's layout &
+components from the dashboard — live for installed templates, one rebuild for new
+ones.
 
-## Why a CLI (and not a plugin)
+[![npm](https://img.shields.io/npm/v/emdash-template-switcher.svg)](https://www.npmjs.com/package/emdash-template-switcher)
+[![CI](https://github.com/pk1983/emdash-template-switcher/actions/workflows/ci.yml/badge.svg)](https://github.com/pk1983/emdash-template-switcher/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](#requirements)
 
-EmDash plugins extend the admin/server; they **can't** render your Astro
-pages/layouts — those are your site's source. So a template switcher is partly
-scaffolded source (registry + routers + templates) plus an admin setting. This
-CLI copies that source in for you, shadcn-style, so you own and can edit it.
+</div>
+
+---
+
+## Table of contents
+
+- [What it does](#what-it-does)
+- [Why a CLI (not a plugin)](#why-a-cli-not-a-plugin)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [`init`](#npx-emdash-template-switcher-init)
+  - [`add <name>`](#npx-emdash-template-switcher-add-name)
+- [How switching works](#how-switching-works)
+- [The template contract](#the-template-contract)
+- [SEO contract check](#seo-contract-check)
+- [Caveats & trade-offs](#caveats--trade-offs)
+- [FAQ](#faq)
+- [Contributing](#contributing)
+- [License](#license)
+
+## What it does
+
+EmDash is an Astro-native CMS. Your site's front-end (pages, layouts, components)
+is *your* source code. This tool adds a small, upgrade-safe layer on top so you
+can ship **multiple full-site templates** and switch between them:
+
+- **Switch installed templates live** from the admin — no rebuild.
+- **Add a new template** with one command; one rebuild bundles its code, then it
+  joins the live-switchable set.
+- **Upgrade-safe**: everything lives in your `src/` and only calls EmDash's public
+  APIs. Nothing forks or patches EmDash core — upgrading EmDash is a version bump.
+
+## Why a CLI (not a plugin)
+
+EmDash plugins extend the admin/server and can inject `<head>` tags or scripts,
+but they **cannot** render your Astro pages/layouts — those are compiled from your
+repo. So a template switcher is inherently *scaffolded source* (a registry, thin
+page routers, template folders) plus an admin setting. This CLI copies that source
+into your project, shadcn-style, so you own and can freely edit it.
 
 ## Requirements
 
-An EmDash site (e.g. `npm create emdash@latest`, or the blog starter) with the
-standard `posts` + `pages` collections.
+- An **EmDash + Astro** site (e.g. `npm create emdash@latest`, or the blog
+  starter) with the standard `posts` and `pages` collections.
+- **Node.js >= 18.**
 
-## Install & init
+## Installation
 
 From inside your EmDash site:
 
 ```bash
-npm i -D emdash-template-switcher
+npm install -D emdash-template-switcher
 npx emdash-template-switcher init
 ```
 
-`init` will:
-
-1. Create `src/template/` — the registry (`index.ts`) + a `minimal` template +
-   shared `lib/`.
-2. Convert `src/pages/*` into thin routers that render the active template
-   (existing pages are skipped unless you pass `--force`; originals are kept as
-   `*.orig`).
-3. Add `scripts/check-templates.cjs` and an npm script `template:check`.
-4. Patch your seed with an `appearance` collection (an **Active template**
-   dropdown).
-
-Then:
+Then apply the schema and start:
 
 ```bash
-npx emdash seed        # apply the appearance schema
+npx emdash seed        # adds the "Appearance" collection with the template picker
 npx emdash types
 npm run dev
 ```
 
-In the admin: **Content → Appearance → Active template**. Switching between
-installed templates is **live** (no rebuild).
+Open the admin → **Content → Appearance → Active template**, pick a template, save.
+Switching between installed templates is **live**.
 
-## Add a template
+> Prefer not to add a dependency? Run it one-off:
+> ```bash
+> npx emdash-template-switcher@latest init
+> ```
+
+## Usage
+
+### `npx emdash-template-switcher init`
+
+Scaffolds the switcher into your site:
+
+1. `src/template/` — the registry (`index.ts`), a **minimal** template, and shared
+   `lib/` helpers.
+2. `src/pages/*` — converts the standard blog pages into thin routers that render
+   the active template. Existing pages are **skipped** unless you pass `--force`
+   (originals are kept as `*.orig`).
+3. `scripts/check-templates.cjs` + a `template:check` npm script.
+4. Patches your seed with an `appearance` collection (the **Active template**
+   dropdown, defaulting to `minimal`).
+
+Flags: `--force` (overwrite existing files, backing them up as `*.orig`).
+
+### `npx emdash-template-switcher add <name>`
+
+Adds a new template, starting from a copy of `minimal`:
 
 ```bash
 npx emdash-template-switcher add magazine
 ```
 
-This copies `minimal` to `src/template/magazine/`, registers it, and adds it to
-the admin dropdown. Edit it, then:
+It scaffolds `src/template/magazine/`, sets its `meta`, **registers it** in
+`src/template/index.ts`, and adds it to the admin dropdown. Then:
 
 ```bash
 npm run build   # one rebuild so the new template's code is bundled
@@ -71,35 +123,81 @@ After that it's live-switchable from the admin like the others.
 ## How switching works
 
 All installed templates are bundled; `resolveActiveTemplate` (in
-`src/template/index.ts`) picks per request:
+`src/template/index.ts`) picks per request, in this order:
 
-1. `PUBLIC_ACTIVE_TEMPLATE` env (CI/hosting force)
-2. `template` cookie — **logged-in editors only** (admin preview)
-3. CMS `appearance.template` (site-wide default)
-4. first installed template (fallback)
+1. `PUBLIC_ACTIVE_TEMPLATE` env var — CI / hosting force.
+2. `template` cookie — **logged-in editors only** (admin preview).
+3. CMS `appearance.template` — the site-wide default (the admin dropdown).
+4. The first installed template — fallback.
 
-The cookie is honoured only for authenticated users, so **anonymous visitors,
-crawlers, and CDNs always get the CMS-elected template** — no cache poisoning,
-no cloaking.
+Because the cookie is honoured **only for authenticated users**, anonymous
+visitors — including search-engine crawlers and anything behind a CDN — always
+receive the CMS-elected template. That keeps every public response deterministic,
+avoiding **cache poisoning** and **cloaking**.
 
 ## The template contract
 
-See `src/template/README.md` after `init`. Each template exports:
-`Layout, Home, PostList, Post, Page, Archive, Search, NotFound` + `meta`.
-Templates are presentation-only (routes do the data fetching). `Layout` must
-include `<EmDashHead>` — `npm run template:check` enforces the SEO head contract
-across every template.
+Each template is a folder exporting the same components (+ a `meta`):
 
-## Caveats
+| Export     | Rendered on             | Props                                                              |
+| ---------- | ----------------------- | ----------------------------------------------------------------- |
+| `Layout`   | every page (the shell)  | `title`, `description`, `image`, `canonical`, `type`, `content`, … |
+| `Home`     | `/`                     | `siteTitle`, `siteTagline`, `posts`                               |
+| `PostList` | `/posts`                | `posts`, `count`                                                 |
+| `Post`     | `/posts/[slug]`         | `post`, `bylines`, `tags`, `otherPosts`                          |
+| `Page`     | `/pages/[slug]`         | `title`, `content`, `editTitle`                                   |
+| `Archive`  | `/category/*`, `/tag/*` | `kind`, `label`, `posts`                                         |
+| `Search`   | `/search`               | `query`, `results`                                               |
+| `NotFound` | `/404`                  | —                                                                |
 
-- **Build-time compilation:** adding/changing template *code* needs a rebuild;
-  only *switching* between built templates is live.
-- **All templates bundle:** every installed template's CSS ships (the cost of
-  live switching). Namespace your template's classes to avoid collisions.
-- `init` converts the **standard blog pages**. If you've customised your pages,
-  run without `--force` and move your markup into a template folder instead of
+Templates are **presentation-only** — the routes do all the EmDash queries and
+pass plain props, which keeps templates insulated from EmDash internals. The one
+hard requirement: `Layout` must include `<EmDashHead>` (see
+`src/template/minimal/Layout.astro`) so SEO tags render.
+
+## SEO contract check
+
+`init` installs a smoke test. With your site running:
+
+```bash
+npm run template:check
+```
+
+It activates each installed template in turn and asserts every representative page
+returns **200** with a non-empty `<title>`, at least one `<h1>`, and EmDashHead's
+SEO tags (canonical / og: / description), then restores the active template. A
+template that forgot `<EmDashHead>` fails it. Wire it into CI.
+
+## Caveats & trade-offs
+
+- **Build-time compilation.** Adding or changing template *code* needs a rebuild;
+  only *switching* between already-built templates is live.
+- **All templates bundle.** Every installed template's CSS ships on every page —
+  the cost of live switching. Namespace your template's class names (e.g. a
+  per-template prefix) to avoid collisions.
+- **`init` converts the standard blog pages.** If you've customised your pages,
+  run without `--force` and move your markup into a template folder rather than
   overwriting.
+
+## FAQ
+
+**Does this modify EmDash core?** No. It only writes into your `src/`, your seed,
+and your `package.json`, and calls EmDash's public APIs.
+
+**Can a non-developer install a brand-new template with no rebuild?** No —
+Astro compiles templates at build time. Non-devs can *switch* between installed
+templates live; shipping new template *code* is a developer + rebuild step.
+
+**Will it survive EmDash upgrades?** Yes, as long as EmDash keeps its public
+query/render APIs. Pin your EmDash version and run `npm run template:check` after
+upgrades.
+
+## Contributing
+
+Issues and PRs welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md). Run `npm run
+check` (syntax) and `npm run smoke` locally, and please test `init` + `add`
+against a scaffolded EmDash site.
 
 ## License
 
-MIT
+[MIT](./LICENSE) © Huankai Chen
