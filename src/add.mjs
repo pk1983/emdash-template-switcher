@@ -5,6 +5,7 @@ import {
 	copyDir,
 	findSeed,
 	addSeedTemplateOption,
+	syncEmdashTemplateCaches,
 	registerTemplateInRegistry,
 	assertEmdashProject,
 	isTemplatePackageSpec,
@@ -66,6 +67,26 @@ export async function runAdd({ cwd, name, force }) {
 	if (seed && addSeedTemplateOption(seed, templateName))
 		log.ok(`added "${templateName}" to appearance → template options`);
 	else log.warn("could not patch seed — add the option manually and reseed.");
+
+	// 4. keep EmDash's local caches aligned so the admin UI picks up the new option immediately
+	log.step("4. Sync local EmDash caches");
+	const sync = seed ? syncEmdashTemplateCaches(cwd, seed) : { attempted: false, changed: false };
+	if (sync.schemaPresent || sync.typesPresent || sync.databasePresent) {
+		const updated = [];
+		if (sync.schemaChanged) updated.push(".emdash/schema.json");
+		if (sync.typesChanged) updated.push(".emdash/types.ts");
+		if (sync.databaseChanged) updated.push("data.db");
+		if (updated.length > 0) {
+			log.ok(`updated ${updated.join(", ")}`);
+		} else {
+			log.skip("local caches already in sync");
+		}
+		if (sync.databasePresent && !sync.databaseChanged) {
+			log.warn("could not update the local database cache; restart the dev server if the admin still hides the template.");
+		}
+	} else {
+		log.warn("could not sync local caches — run `npx emdash types` or restart the dev server if needed.");
+	}
 
 	log.step("Done ✓");
 	console.log(`

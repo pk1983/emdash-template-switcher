@@ -127,7 +127,9 @@ For a template name, it scaffolds `src/template/<name>/`, sets its `meta`,
 For a package URL or `.tar.gz` path, it installs the files listed in the
 package manifest, then registers the package `id` and adds it to the admin
 dropdown. For `id@version`, it resolves the template from the marketplace
-catalog first, then installs the package archive it points to.
+catalog first, then installs the package archive it points to. In every case it
+also refreshes the local EmDash schema cache, generated types, and database so
+the new template appears in the admin immediately.
 
 Then:
 

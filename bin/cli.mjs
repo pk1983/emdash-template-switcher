@@ -14,8 +14,8 @@ Usage:
   npx emdash-template-switcher add <name|url|id@version>
                                                Add a new template (starts from a copy
                                                of "minimal", installs a package URL,
-                                               or resolves a marketplace version)
-                                               and register it.
+                                               or resolves a marketplace version),
+                                               then syncs local EmDash caches.
 
   npx emdash-template-switcher upgrade          Upgrade emdash-template-switcher to the
                                                latest version in this project.

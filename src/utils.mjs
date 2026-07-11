@@ -316,6 +316,111 @@ export function addSeedTemplateOption(seedPath, name) {
 	return true;
 }
 
+/**
+ * Keep EmDash's local caches in sync with the updated seed so the admin UI
+ * reflects a newly-added template immediately.
+ */
+export function syncEmdashTemplateCaches(cwd, seedPath) {
+	const templateNames = getAppearanceTemplateOptions(seedPath);
+	const schemaPath = join(cwd, ".emdash", "schema.json");
+	const typesPath = join(cwd, ".emdash", "types.ts");
+	const dbPath = join(cwd, "data.db");
+
+	const result = {
+		schemaPresent: false,
+		typesPresent: false,
+		databasePresent: false,
+		schemaChanged: false,
+		typesChanged: false,
+		databaseChanged: false,
+	};
+	if (existsSync(schemaPath)) {
+		result.schemaPresent = true;
+		result.schemaChanged = patchEmdashSchemaCache(schemaPath, templateNames);
+	}
+	if (existsSync(typesPath)) {
+		result.typesPresent = true;
+		result.typesChanged = patchEmdashTypesCache(typesPath, templateNames);
+	}
+	if (existsSync(dbPath)) {
+		result.databasePresent = true;
+		result.databaseChanged = patchEmdashDatabase(dbPath, templateNames);
+	}
+	return result;
+}
+
+function getAppearanceTemplateOptions(seedPath) {
+	const seed = readJson(seedPath);
+	const field = seed.collections
+		?.find((c) => c.slug === "appearance")
+		?.fields?.find((f) => f.slug === "template");
+	const options = field?.validation?.options;
+	if (Array.isArray(options) && options.length > 0) {
+		return options.filter((value) => typeof value === "string" && value.trim());
+	}
+	return ["minimal"];
+}
+
+function patchEmdashSchemaCache(schemaPath, templateNames) {
+	const schema = readJson(schemaPath);
+	const field = schema.collections
+		?.find((c) => c.slug === "appearance")
+		?.fields?.find((f) => f.slug === "template");
+	const next = Array.from(new Set(templateNames));
+	const current = Array.isArray(field?.validation?.options) ? field.validation.options : [];
+	if (arraysEqual(current, next)) return false;
+	if (field) {
+		field.validation ??= {};
+		field.validation.options = next;
+		writeJson(schemaPath, schema);
+		return true;
+	}
+	return false;
+}
+
+function patchEmdashTypesCache(typesPath, templateNames) {
+	let src = readFileSync(typesPath, "utf8");
+	const next = templateNames.map((name) => JSON.stringify(name)).join(" | ");
+	const pattern = /(export interface Appearance \{[\s\S]*?\n\s*template\?\s*:\s*)([^;\n]+)(;)/m;
+	if (!pattern.test(src)) return false;
+	const replaced = src.replace(pattern, `$1${next}$3`);
+	if (replaced === src) return false;
+	writeFileSync(typesPath, replaced);
+	return true;
+}
+
+function patchEmdashDatabase(dbPath, templateNames) {
+	const optionsJson = JSON.stringify(Array.from(new Set(templateNames)));
+	const script = `
+		const Database = require("better-sqlite3");
+		const db = new Database(${JSON.stringify(dbPath)});
+		try {
+			db.prepare(\`
+				UPDATE _emdash_fields
+				SET validation = json_set(coalesce(validation, '{}'), '$.options', json(?))
+				WHERE slug = 'template'
+				  AND collection_id = (SELECT id FROM _emdash_collections WHERE slug = 'appearance')
+			\`).run(${JSON.stringify(optionsJson)});
+		} finally {
+			db.close();
+		}
+	`;
+	try {
+		execFileSync("node", ["-e", script], { cwd: dirname(dbPath) });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function arraysEqual(a, b) {
+	if (a.length !== b.length) return false;
+	for (let i = 0; i < a.length; i += 1) {
+		if (a[i] !== b[i]) return false;
+	}
+	return true;
+}
+
 /** Register a template in src/template/index.ts via the marker comments. */
 export function registerTemplateInRegistry(indexPath, name) {
   let src = readFileSync(indexPath, "utf8");
