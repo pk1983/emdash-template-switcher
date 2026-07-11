@@ -1,0 +1,30 @@
+---
+import { PortableText } from "emdash/ui";
+
+interface Props {
+	title: string;
+	content: unknown;
+	editTitle?: Record<string, unknown>;
+}
+const { title, content, editTitle = {} } = Astro.props;
+---
+
+<article class="m-page">
+	<h1 class="m-page-title" {...editTitle}>{title}</h1>
+	<div class="m-page-content">
+		<PortableText value={content} />
+	</div>
+</article>
+
+<style>
+	.m-page { max-width: var(--m-measure); margin: 0 auto; padding: 3.5rem 1.5rem; }
+	.m-page-title { font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.02em; padding-bottom: 1.5rem; margin-bottom: 2rem; border-bottom: 1px solid var(--m-border); }
+	.m-page-content { font-family: var(--m-serif); font-size: 1.2rem; line-height: 1.75; }
+	.m-page-content :global(p) { margin-bottom: 1.5em; }
+	.m-page-content :global(h2) { font-size: 1.6rem; margin: 2em 0 0.6em; }
+	.m-page-content :global(h3) { font-size: 1.3rem; margin: 1.8em 0 0.5em; }
+	.m-page-content :global(a) { text-decoration: underline; text-underline-offset: 3px; }
+	.m-page-content :global(blockquote) { margin: 2em 0; padding-left: 1.25rem; border-left: 3px solid var(--m-border); color: var(--m-muted); font-style: italic; }
+	.m-page-content :global(ul), .m-page-content :global(ol) { margin-bottom: 1.5em; padding-left: 1.5em; }
+	.m-page-content :global(li) { margin-bottom: 0.5em; }
+</style>

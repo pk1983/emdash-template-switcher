@@ -1,0 +1,17 @@
+---
+export const prerender = false;
+
+import { search } from "emdash";
+import { resolveActiveTemplate } from "../template";
+
+const query = Astro.url.searchParams.get("q")?.trim() || "";
+const { items: results } = query
+	? await search(query, { collections: ["posts"], limit: 30 })
+	: { items: [] };
+
+const { Layout, Search } = await resolveActiveTemplate(Astro);
+---
+
+<Layout title={query ? `Search: ${query}` : "Search"} description="Search posts">
+	<Search query={query} results={results} />
+</Layout>

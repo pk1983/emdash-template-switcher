@@ -1,0 +1,51 @@
+---
+interface Props {
+	query: string;
+	results: Array<{ id: string; slug?: string; title?: string; snippet?: string }>;
+}
+const { query, results } = Astro.props;
+---
+
+<div class="m-search">
+	<h1 class="m-search-title">Search</h1>
+	<form method="get" action="/search" class="m-search-form">
+		<input type="search" name="q" value={query} placeholder="Search posts..." autofocus />
+		<button type="submit">Search</button>
+	</form>
+
+	{query && (
+		<p class="m-muted">
+			{results.length === 0
+				? `No results for "${query}"`
+				: `${results.length} result${results.length === 1 ? "" : "s"} for "${query}"`}
+		</p>
+	)}
+
+	{results.length > 0 && (
+		<ul class="m-search-results">
+			{results.map((r) => (
+				<li>
+					<a href={`/posts/${r.slug ?? r.id}`}>
+						<h2>{r.title ?? "Untitled"}</h2>
+						{r.snippet && <p class="m-muted" set:html={r.snippet} />}
+					</a>
+				</li>
+			))}
+		</ul>
+	)}
+</div>
+
+<style>
+	.m-search { max-width: var(--m-measure); margin: 0 auto; padding: 3.5rem 1.5rem; }
+	.m-search-title { font-size: clamp(2rem, 5vw, 2.8rem); letter-spacing: -0.02em; margin-bottom: 1.5rem; }
+	.m-search-form { display: flex; gap: 0.75rem; margin-bottom: 2rem; }
+	.m-search-form input { flex: 1; padding: 0.7rem 1rem; font-size: 1rem; border: 1px solid var(--m-border); border-radius: 6px; background: var(--m-bg); color: var(--m-text); }
+	.m-search-form input:focus { outline: none; border-color: var(--m-text); }
+	.m-search-form button { padding: 0.7rem 1.5rem; border: none; border-radius: 6px; background: var(--m-accent); color: var(--m-bg); font-size: 1rem; cursor: pointer; }
+	.m-search-results { list-style: none; padding: 0; }
+	.m-search-results li { padding: 1.5rem 0; border-bottom: 1px solid var(--m-border); }
+	.m-search-results a { text-decoration: none; }
+	.m-search-results h2 { font-size: 1.4rem; margin-bottom: 0.4rem; }
+	.m-muted { color: var(--m-muted); }
+	.m-muted :global(mark) { background: color-mix(in srgb, var(--m-text) 15%, transparent); color: inherit; }
+</style>

@@ -1,0 +1,23 @@
+---
+import { getTerm, getEmDashCollection, getTermsForEntries, decodeSlug } from "emdash";
+import { resolveActiveTemplate } from "../../template";
+
+const slug = decodeSlug(Astro.params.slug);
+const term = slug ? await getTerm("tag", slug) : null;
+if (!term) return Astro.redirect("/404");
+
+const { entries: posts, cacheHint } = await getEmDashCollection("posts", {
+	where: { tag: term.slug },
+	orderBy: { published_at: "desc" },
+});
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const tagsByEntry = await getTermsForEntries("posts", posts.map((p) => p.data.id), "tag");
+const rows = posts.map((post) => ({ post, tags: tagsByEntry.get(post.data.id) ?? [] }));
+
+const { Layout, Archive } = await resolveActiveTemplate(Astro);
+---
+
+<Layout title={`Posts tagged "${term.label}"`} description={`All posts tagged with ${term.label}`}>
+	<Archive kind="Tag" label={`#${term.label}`} posts={rows} />
+</Layout>

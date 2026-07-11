@@ -1,0 +1,17 @@
+---
+import { getEmDashEntry, decodeSlug } from "emdash";
+import { resolveActiveTemplate } from "../../template";
+
+const slug = decodeSlug(Astro.params.slug);
+if (!slug) return Astro.redirect("/404");
+
+const { entry: page, cacheHint } = await getEmDashEntry("pages", slug);
+if (!page) return Astro.redirect("/404");
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const { Layout, Page } = await resolveActiveTemplate(Astro);
+---
+
+<Layout title={page.data.title} content={{ collection: "pages", id: page.data.id, slug }}>
+	<Page title={page.data.title} content={page.data.content} editTitle={page.edit.title} />
+</Layout>

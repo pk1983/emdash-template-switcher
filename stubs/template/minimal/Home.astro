@@ -1,0 +1,53 @@
+---
+import { readingTime } from "../lib/reading-time";
+import { formatDate } from "../lib/format-date";
+
+interface Props {
+	siteTitle: string;
+	siteTagline?: string;
+	posts: Array<{ post: any; tags: any[]; bylines: any[] }>;
+}
+const { siteTitle, siteTagline, posts } = Astro.props;
+---
+
+<div class="m-wrap">
+	<section class="m-hero">
+		<h1 class="m-hero-title">{siteTitle}</h1>
+		{siteTagline && <p class="m-hero-tagline">{siteTagline}</p>}
+	</section>
+
+	<section class="m-list-section">
+		<h2 class="m-section-label">Latest writing</h2>
+		<ul class="m-list">
+			{posts.map(({ post }) => (
+				<li class="m-item">
+					<a href={`/posts/${post.id}`} class="m-item-link">
+						<h3 class="m-item-title">{post.data.title}</h3>
+						<div class="m-item-meta">
+							{formatDate(post.data.publishedAt) && <time>{formatDate(post.data.publishedAt)}</time>}
+							<span>· {readingTime(post.data.content)} min read</span>
+						</div>
+						{post.data.excerpt && <p class="m-item-excerpt">{post.data.excerpt}</p>}
+					</a>
+				</li>
+			))}
+		</ul>
+	</section>
+</div>
+
+<style>
+	.m-wrap { max-width: var(--m-measure); margin: 0 auto; padding: 0 1.5rem; }
+	.m-hero { padding: 4.5rem 0 3rem; border-bottom: 1px solid var(--m-border); }
+	.m-hero-title { font-size: clamp(2.4rem, 6vw, 3.4rem); letter-spacing: -0.02em; }
+	.m-hero-tagline { margin-top: 1rem; font-size: 1.2rem; color: var(--m-muted); line-height: 1.5; }
+	.m-list-section { padding: 3rem 0; }
+	.m-section-label { font-family: var(--m-sans); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--m-muted); margin-bottom: 2rem; }
+	.m-list { list-style: none; padding: 0; }
+	.m-item { padding: 1.75rem 0; border-bottom: 1px solid var(--m-border); }
+	.m-item:last-child { border-bottom: none; }
+	.m-item-link { text-decoration: none; display: block; }
+	.m-item-title { font-size: 1.6rem; letter-spacing: -0.01em; transition: opacity 0.15s ease; }
+	.m-item-link:hover .m-item-title { opacity: 0.6; }
+	.m-item-meta { margin-top: 0.4rem; font-size: 0.9rem; color: var(--m-muted); display: flex; gap: 0.4rem; }
+	.m-item-excerpt { margin-top: 0.75rem; color: var(--m-muted); line-height: 1.6; }
+</style>

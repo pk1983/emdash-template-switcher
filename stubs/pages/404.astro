@@ -1,0 +1,8 @@
+---
+import { resolveActiveTemplate } from "../template";
+const { Layout, NotFound } = await resolveActiveTemplate(Astro);
+---
+
+<Layout title="Page not found">
+	<NotFound />
+</Layout>

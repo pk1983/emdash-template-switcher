@@ -1,0 +1,18 @@
+{
+	"name": "emdash-template-switcher",
+	"version": "0.1.0",
+	"description": "Live, admin-switchable site templates for EmDash CMS. A shadcn-style CLI that scaffolds a template registry + a minimal template into your EmDash/Astro site.",
+	"keywords": ["emdash", "astro", "cms", "template", "theme", "switcher", "cli"],
+	"license": "MIT",
+	"type": "module",
+	"bin": {
+		"emdash-template-switcher": "bin/cli.mjs"
+	},
+	"files": ["bin", "src", "stubs", "README.md"],
+	"engines": {
+		"node": ">=18"
+	},
+	"scripts": {
+		"format": "echo \"(add prettier if desired)\""
+	}
+}

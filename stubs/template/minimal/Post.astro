@@ -1,0 +1,92 @@
+---
+import { Image, PortableText, Comments, CommentForm } from "emdash/ui";
+import { readingTime } from "../lib/reading-time";
+import { formatDate } from "../lib/format-date";
+
+interface Props {
+	post: any;
+	bylines: any[];
+	tags: Array<{ slug: string; label: string }>;
+	otherPosts: Array<{ post: any; tags: any[]; bylines: any[] }>;
+}
+const { post, bylines, tags, otherPosts } = Astro.props;
+const authorNames = bylines.map((b) => b.byline.displayName).join(", ");
+const publishDate = formatDate(post.data.publishedAt);
+const mins = readingTime(post.data.content);
+---
+
+<article class="m-article">
+	<header class="m-article-head">
+		<div class="m-article-meta">
+			{authorNames && <span>{authorNames}</span>}
+			{authorNames && <span>·</span>}
+			{publishDate && <time>{publishDate}</time>}
+			<span>·</span>
+			<span>{mins} min read</span>
+		</div>
+		<h1 class="m-article-title" {...post.edit.title}>{post.data.title}</h1>
+		{post.data.excerpt && <p class="m-article-excerpt" {...post.edit.excerpt}>{post.data.excerpt}</p>}
+	</header>
+
+	{post.data.featured_image && (
+		<div class="m-article-hero" {...post.edit.featured_image}>
+			<Image image={post.data.featured_image} />
+		</div>
+	)}
+
+	<div class="m-article-content">
+		<PortableText value={post.data.content} />
+	</div>
+
+	{tags.length > 0 && (
+		<div class="m-article-tags">
+			{tags.map((t) => <a href={`/tag/${t.slug}`}>#{t.label}</a>)}
+		</div>
+	)}
+
+	<div class="m-comments">
+		<Comments collection="posts" contentId={post.data.id} threaded />
+		<CommentForm collection="posts" contentId={post.data.id} />
+	</div>
+</article>
+
+{otherPosts.length > 0 && (
+	<aside class="m-more">
+		<h2 class="m-more-title">More writing</h2>
+		<ul class="m-more-list">
+			{otherPosts.map(({ post: p }) => (
+				<li><a href={`/posts/${p.id}`}>{p.data.title}</a></li>
+			))}
+		</ul>
+	</aside>
+)}
+
+<style>
+	.m-article { max-width: var(--m-measure); margin: 0 auto; padding: 3.5rem 1.5rem 0; }
+	.m-article-head { margin-bottom: 2rem; }
+	.m-article-meta { font-size: 0.9rem; color: var(--m-muted); display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+	.m-article-title { font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.02em; }
+	.m-article-excerpt { margin-top: 1rem; font-size: 1.25rem; color: var(--m-muted); font-family: var(--m-serif); font-style: italic; }
+	.m-article-hero { margin: 0 0 2.5rem; border-radius: 6px; overflow: hidden; }
+	.m-article-hero img { width: 100%; max-height: 460px; object-fit: cover; }
+	.m-article-content { font-family: var(--m-serif); font-size: 1.2rem; line-height: 1.75; }
+	.m-article-content :global(p) { margin-bottom: 1.5em; }
+	.m-article-content :global(h2) { font-size: 1.6rem; margin: 2em 0 0.6em; }
+	.m-article-content :global(h3) { font-size: 1.3rem; margin: 1.8em 0 0.5em; }
+	.m-article-content :global(a) { text-decoration: underline; text-underline-offset: 3px; }
+	.m-article-content :global(blockquote) { margin: 2em 0; padding-left: 1.25rem; border-left: 3px solid var(--m-border); color: var(--m-muted); font-style: italic; }
+	.m-article-content :global(pre) { font-family: ui-monospace, monospace; font-size: 0.9rem; background: color-mix(in srgb, var(--m-text) 5%, transparent); padding: 1rem 1.25rem; border-radius: 6px; overflow-x: auto; margin: 2em 0; }
+	.m-article-content :global(code) { font-family: ui-monospace, monospace; font-size: 0.9em; }
+	.m-article-content :global(img) { margin: 2em 0; border-radius: 6px; }
+	.m-article-tags { margin-top: 2.5rem; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+	.m-article-tags a { font-size: 0.9rem; color: var(--m-muted); text-decoration: none; }
+	.m-article-tags a:hover { color: var(--m-text); }
+	.m-comments { max-width: var(--m-measure); margin: 3rem auto 0; padding: 2rem 0 0; border-top: 1px solid var(--m-border); }
+	.m-comments :global(.ec-comment-form-submit) { background: var(--m-accent) !important; color: var(--m-bg) !important; }
+	.m-more { max-width: var(--m-measure); margin: 3rem auto 0; padding: 2rem 1.5rem 0; border-top: 1px solid var(--m-border); }
+	.m-more-title { font-size: 1.3rem; margin-bottom: 1rem; }
+	.m-more-list { list-style: none; padding: 0; }
+	.m-more-list li { padding: 0.5rem 0; }
+	.m-more-list a { text-decoration: none; color: var(--m-text); }
+	.m-more-list a:hover { opacity: 0.6; }
+</style>

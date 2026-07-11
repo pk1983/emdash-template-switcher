@@ -1,0 +1,32 @@
+---
+import { getSiteSettings, getEmDashCollection, getTermsForEntries } from "emdash";
+import { resolveActiveTemplate } from "../template";
+
+// Thin router: fetch data, hand it to the ACTIVE template's Home component.
+const [settings, postsResult] = await Promise.all([
+	getSiteSettings(),
+	getEmDashCollection("posts", { orderBy: { published_at: "desc" }, limit: 12 }),
+]);
+if (Astro.cache?.enabled) Astro.cache.set(postsResult.cacheHint);
+
+const rawPosts = postsResult.entries;
+const tagsByEntry = await getTermsForEntries(
+	"posts",
+	rawPosts.map((p) => p.data.id),
+	"tag",
+);
+const posts = rawPosts.map((post) => ({
+	post,
+	tags: (tagsByEntry.get(post.data.id) ?? []).map((t) => ({ slug: t.slug, label: t.label })),
+	bylines: post.data.bylines ?? [],
+}));
+
+const siteTitle = settings?.title ?? "Home";
+const siteTagline = settings?.tagline ?? "";
+
+const { Layout, Home } = await resolveActiveTemplate(Astro);
+---
+
+<Layout title={siteTitle} description={siteTagline}>
+	<Home siteTitle={siteTitle} siteTagline={siteTagline} posts={posts} />
+</Layout>

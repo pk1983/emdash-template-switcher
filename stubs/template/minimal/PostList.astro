@@ -1,0 +1,52 @@
+---
+import { readingTime } from "../lib/reading-time";
+import { formatDate } from "../lib/format-date";
+
+interface Props {
+	posts: Array<{ post: any; tags: any[]; bylines: any[] }>;
+	count: number;
+}
+const { posts, count } = Astro.props;
+---
+
+<div class="m-wrap">
+	<header class="m-page-head">
+		<h1 class="m-page-title">All writing</h1>
+		<p class="m-page-count">{count} {count === 1 ? "article" : "articles"}</p>
+	</header>
+
+	{posts.length === 0 ? (
+		<p class="m-muted">No posts yet.</p>
+	) : (
+		<ul class="m-list">
+			{posts.map(({ post }) => (
+				<li class="m-item">
+					<a href={`/posts/${post.id}`} class="m-item-link">
+						<h3 class="m-item-title">{post.data.title}</h3>
+						<div class="m-item-meta">
+							{formatDate(post.data.publishedAt) && <time>{formatDate(post.data.publishedAt)}</time>}
+							<span>· {readingTime(post.data.content)} min read</span>
+						</div>
+						{post.data.excerpt && <p class="m-item-excerpt">{post.data.excerpt}</p>}
+					</a>
+				</li>
+			))}
+		</ul>
+	)}
+</div>
+
+<style>
+	.m-wrap { max-width: var(--m-measure); margin: 0 auto; padding: 3.5rem 1.5rem; }
+	.m-page-head { padding-bottom: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--m-border); }
+	.m-page-title { font-size: clamp(2rem, 5vw, 2.8rem); letter-spacing: -0.02em; }
+	.m-page-count { margin-top: 0.5rem; color: var(--m-muted); }
+	.m-list { list-style: none; padding: 0; }
+	.m-item { padding: 1.75rem 0; border-bottom: 1px solid var(--m-border); }
+	.m-item:last-child { border-bottom: none; }
+	.m-item-link { text-decoration: none; display: block; }
+	.m-item-title { font-size: 1.5rem; letter-spacing: -0.01em; transition: opacity 0.15s ease; }
+	.m-item-link:hover .m-item-title { opacity: 0.6; }
+	.m-item-meta { margin-top: 0.4rem; font-size: 0.9rem; color: var(--m-muted); display: flex; gap: 0.4rem; }
+	.m-item-excerpt { margin-top: 0.75rem; color: var(--m-muted); line-height: 1.6; }
+	.m-muted { color: var(--m-muted); }
+</style>

@@ -1,0 +1,26 @@
+---
+import { getEmDashCollection, getTermsForEntries } from "emdash";
+import { resolveActiveTemplate } from "../../template";
+
+const { entries: posts, cacheHint } = await getEmDashCollection("posts", {
+	orderBy: { published_at: "desc" },
+});
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const tagsByEntry = await getTermsForEntries(
+	"posts",
+	posts.map((p) => p.data.id),
+	"tag",
+);
+const postsWithTags = posts.map((post) => ({
+	post,
+	tags: (tagsByEntry.get(post.data.id) ?? []).map((t) => ({ slug: t.slug, label: t.label })),
+	bylines: post.data.bylines ?? [],
+}));
+
+const { Layout, PostList } = await resolveActiveTemplate(Astro);
+---
+
+<Layout title="All Posts" description="Browse all posts">
+	<PostList posts={postsWithTags} count={posts.length} />
+</Layout>
