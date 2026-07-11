@@ -2,6 +2,7 @@
 import process from "node:process";
 import { runInit } from "../src/init.mjs";
 import { runAdd } from "../src/add.mjs";
+import { runUpgrade } from "../src/upgrade.mjs";
 
 const HELP = `emdash-template-switcher — live, admin-switchable templates for EmDash
 
@@ -13,6 +14,9 @@ Usage:
   npx emdash-template-switcher add <name|url>   Add a new template (starts from a copy
                                                of "minimal" or installs a package URL)
                                                and register it.
+
+  npx emdash-template-switcher upgrade          Upgrade emdash-template-switcher to the
+                                               latest version in this project.
 
 Options:
   --force       Overwrite existing files instead of skipping/backing up.
@@ -40,6 +44,8 @@ async function main() {
 			process.exit(1);
 		}
 		await runAdd({ cwd, name, force });
+	} else if (cmd === "upgrade") {
+		await runUpgrade({ cwd });
 	} else {
 		console.error(`✗ Unknown command "${cmd}"\n`);
 		console.log(HELP);

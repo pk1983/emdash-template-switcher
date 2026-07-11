@@ -27,6 +27,7 @@ ones.
 - [Usage](#usage)
   - [`init`](#npx-emdash-template-switcher-init)
   - [`add <name>`](#npx-emdash-template-switcher-add-name)
+  - [`upgrade`](#npx-emdash-template-switcher-upgrade)
 - [How switching works](#how-switching-works)
 - [The template contract](#the-template-contract)
 - [SEO contract check](#seo-contract-check)
@@ -130,6 +131,25 @@ npm run build   # one rebuild so the new template's code is bundled
 ```
 
 After that it's live-switchable from the admin like the others.
+
+### `npx emdash-template-switcher upgrade`
+
+Upgrades the switcher in the current project to the latest published version.
+It detects your package manager when possible and runs the matching install
+command for `emdash-template-switcher@latest`.
+
+```bash
+npx emdash-template-switcher upgrade
+```
+
+If you prefer to do it manually, use one of these:
+
+```bash
+npm install -D emdash-template-switcher@latest
+pnpm add -D emdash-template-switcher@latest
+yarn add -D emdash-template-switcher@latest
+bun add -d emdash-template-switcher@latest
+```
 
 ## How switching works
 

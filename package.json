@@ -33,7 +33,7 @@
 		"node": ">=18"
 	},
 	"scripts": {
-		"check": "node --check bin/cli.mjs && node --check src/init.mjs && node --check src/add.mjs && node --check src/utils.mjs",
+		"check": "node --check bin/cli.mjs && node --check src/init.mjs && node --check src/add.mjs && node --check src/upgrade.mjs && node --check src/utils.mjs",
 		"smoke": "node bin/cli.mjs --help"
 	}
 }
