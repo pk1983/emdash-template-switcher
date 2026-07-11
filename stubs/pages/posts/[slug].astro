@@ -40,6 +40,8 @@ const seo = getSeoMeta(post, {
 
 const bylines = post.data.bylines ?? [];
 const tags = post.data.terms?.tag ?? [];
+const publishDate = post.data.publishedAt ? post.data.publishedAt.toISOString() : null;
+const readingTime = Math.max(1, Math.round((post.data.content?.length ?? 0) / 1200) || 1);
 
 const { entries: recent } = await getEmDashCollection("posts", {
 	orderBy: { published_at: "desc" },
@@ -64,9 +66,9 @@ const { Layout, Post } = await resolveActiveTemplate(Astro);
 	canonical={seo.canonical}
 	robots={seo.robots}
 	type="article"
-	publishedTime={post.data.publishedAt?.toISOString() ?? null}
+	publishedTime={publishDate}
 	modifiedTime={post.data.updatedAt.toISOString()}
 	content={{ collection: "posts", id: post.data.id, slug }}
 >
-	<Post post={post} bylines={bylines} tags={tags} otherPosts={otherPosts} />
+	<Post post={post} bylines={bylines} tags={tags} publishDate={publishDate} readingTime={readingTime} otherPosts={otherPosts} />
 </Layout>

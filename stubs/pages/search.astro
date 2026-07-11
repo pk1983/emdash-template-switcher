@@ -8,10 +8,14 @@ const query = Astro.url.searchParams.get("q")?.trim() || "";
 const { items: results } = query
 	? await search(query, { collections: ["posts"], limit: 30 })
 	: { items: [] };
+const normalizedResults = results.map((result) => ({
+	...result,
+	slug: result.slug ?? undefined,
+}));
 
 const { Layout, Search } = await resolveActiveTemplate(Astro);
 ---
 
 <Layout title={query ? `Search: ${query}` : "Search"} description="Search posts">
-	<Search query={query} results={results} />
+	<Search query={query} results={normalizedResults} />
 </Layout>
